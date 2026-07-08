@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>词卡 · ทบทวนคำศัพท์ HSK</title>
+<style>
+  :root{
+    --rice:#F7F1E3;
+    --rice-2:#EFE6D0;
+    --clay:#E4D9C4;
+    --ink:#262220;
+    --ink-soft:#5c5450;
+    --seal:#B3242A;
+    --seal-dark:#8C1A20;
+    --gold:#C29650;
+    --jade:#6E8B6B;
+    --jade-dark:#4f6a4d;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 10%, rgba(178,36,42,0.05), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(194,150,80,0.08), transparent 45%),
+      var(--rice);
+    color:var(--ink);
+    font-family: "Sarabun","Noto Sans Thai","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:18px 14px 40px;
+  }
+  .cjk{ font-family:"Songti SC","STSong","Noto Serif SC","SimSun",serif; }
+
+  /* header */
+  header{
+    width:100%;
+    max-width:480px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .brand{ display:flex; flex-direction:column; }
+  .brand .zh{ font-size:22px; font-weight:700; letter-spacing:1px; }
+  .brand .th{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+
+  .seal-btn{
+    width:46px;height:46px;border-radius:50%;
+    background:var(--rice-2);
+    border:1.5px solid var(--gold);
+    color:var(--seal);
+    font-family:"Songti SC","STSong",serif;
+    font-size:20px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer; flex-shrink:0;
+    transition:transform .15s ease;
+  }
+  .seal-btn:active{ transform:scale(0.92); }
+  .seal-btn:focus-visible, button:focus-visible, .choice:focus-visible{
+    outline:2px solid var(--seal); outline-offset:2px;
+  }
+
+  /* level picker */
+  .levels{
+    width:100%; max-width:480px;
+    display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;
+  }
+  .level-chip{
+    flex:1; min-width:62px;
+    padding:9px 6px;
+    border-radius:10px;
+    border:1.5px solid var(--clay);
+    background:var(--rice-2);
+    color:var(--ink);
+    font-size:12.5px; font-weight:600;
+    cursor:pointer;
+    text-align:center;
+    transition:.15s ease;
+  }
+  .level-chip.active{
+    background:var(--seal); border-color:var(--seal-dark); color:#fff;
+  }
+
+  /* progress row */
+  .progress-row{
+    width:100%; max-width:480px;
+    display:flex; align-items:center; gap:10px;
+    font-size:12.5px; color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .progress-track{
+    flex:1; height:6px; border-radius:4px; background:var(--clay); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg, var(--gold), var(--seal)); width:0%;
+    transition:width .3s ease;
+  }
+  .retry-badge{
+    background:var(--jade); color:#fff; border-radius:20px;
+    padding:2px 9px; font-size:11.5px; font-weight:600; white-space:nowrap;
+  }
+
+  /* card */
+  .card{
+    width:100%; max-width:480px;
+    background:#fffdf8;
+    border:1px solid var(--clay);
+    border-radius:20px;
+    box-shadow:0 6px 24px rgba(38,34,32,0.08);
+    padding:34px 22px 26px;
+    text-align:center;
+    position:relative;
+    min-height:230px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .card::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px solid var(--gold);
+    border-radius:14px;
+    opacity:.35;
+    pointer-events:none;
+  }
+  .hanzi{
+    font-size:64px; font-weight:700; line-height:1;
+    margin-bottom:10px;
+  }
+  .pinyin{
+    font-size:18px; color:var(--seal); font-style:italic; font-weight:600;
+    letter-spacing:.5px;
+  }
+  .hint{ font-size:12.5px; color:var(--ink-soft); margin-top:14px; }
+
+  .feedback{
+    width:100%; max-width:480px;
+    margin-top:12px; margin-bottom:2px;
+    min-height:22px;
+    font-size:14.5px; font-weight:600; text-align:center;
+  }
+  .feedback.correct{ color:var(--jade-dark); }
+  .feedback.wrong{ color:var(--seal-dark); }
+
+  /* choices */
+  .choices{
+    width:100%; max-width:480px;
+    display:flex; flex-direction:column; gap:10px;
+    margin-top:16px;
+  }
+  .choice{
+    background:var(--rice-2);
+    border:1.5px solid var(--clay);
+    border-radius:14px;
+    padding:13px 16px;
+    text-align:left;
+    cursor:pointer;
+    font-size:15.5px;
+    color:var(--ink);
+    display:flex; flex-direction:column; gap:2px;
+    transition:.15s ease;
+  }
+  .choice:not(.locked):active{ transform:scale(0.985); }
+  .choice .th-line{ font-weight:600; }
+  .choice .zh-line{ display:none; font-size:13px; color:var(--ink-soft); }
+  .choice.reveal .zh-line{ display:block; }
+  .choice.correct-answer{ border-color:var(--jade); background:#eef4ec; }
+  .choice.wrong-pick{ border-color:var(--seal); background:#f7e9e8; }
+  .choice.locked{ cursor:default; }
+
+  .next-btn{
+    width:100%; max-width:480px;
+    margin-top:14px;
+    padding:13px;
+    border:none; border-radius:14px;
+    background:var(--ink); color:#fff;
+    font-size:15px; font-weight:700;
+    cursor:pointer;
+  }
+
+  .done-screen{
+    width:100%; max-width:480px; text-align:center; padding:40px 10px;
+  }
+  .done-screen .zh{ font-size:26px; font-weight:700; margin-bottom:6px; }
+  .done-screen p{ color:var(--ink-soft); font-size:14px; margin-bottom:20px;}
+  .done-screen button{
+    padding:12px 22px; border-radius:12px; border:none;
+    background:var(--seal); color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(38,34,32,0.55);
+    display:none; align-items:flex-end; justify-content:center; z-index:20;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--rice); width:100%; max-width:520px;
+    border-radius:20px 20px 0 0;
+    max-height:82vh; display:flex; flex-direction:column;
+    padding:18px 16px 10px;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .modal-head .zh{ font-size:18px; font-weight:700; }
+  .modal-head .close{
+    background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;padding:4px 8px;
+  }
+  .modal-sub{ font-size:12px; color:var(--ink-soft); margin-bottom:10px; }
+  .modal-list{ overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-bottom:10px;}
+  .vocab-row{
+    background:#fffdf8; border:1px solid var(--clay); border-radius:12px;
+    padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .vocab-main{ display:flex; flex-direction:column; }
+  .vocab-main .zh{ font-size:17px; font-weight:700; }
+  .vocab-main .py{ font-size:12.5px; color:var(--seal); font-style:italic; }
+  .vocab-main .th{ font-size:12.5px; color:var(--ink-soft); }
+  .status-pill{
+    font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .status-ok{ background:#e8f0e6; color:var(--jade-dark); }
+  .status-retry{ background:#f7e9e8; color:var(--seal-dark); }
+  .empty-note{ color:var(--ink-soft); font-size:13.5px; text-align:center; padding:30px 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="zh cjk">词卡 · HSK</div>
+    <div class="th">ทบทวนคำศัพท์จีนกลาง</div>
+  </div>
+  <button class="seal-btn cjk" id="reviewBtn" title="ทบทวนคำศัพท์" aria-label="เปิดทบทวนคำศัพท์">印</button>
+</header>
+
+<div class="levels" id="levelPicker">
+  <div class="level-chip" data-level="1">HSK 1</div>
+  <div class="level-chip" data-level="2">HSK 2</div>
+  <div class="level-chip" data-level="3">HSK 3</div>
+  <div class="level-chip" data-level="4">HSK 4</div>
+  <div class="level-chip" data-level="all">HSK 1-4</div>
+</div>
+
+<div class="progress-row" id="progressRow" style="display:none;">
+  <span id="progressText">0 / 0</span>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <span class="retry-badge" id="retryBadge" style="display:none;">รอทบทวน 0</span>
+</div>
+
+<div id="quizArea"></div>
+
+<!-- Vocab review modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="zh cjk">ทบทวนคำศัพท์</div>
+      <button class="close" id="closeModal">✕</button>
+    </div>
+    <div class="modal-sub">คำทั้งหมดที่เคยขึ้นให้ดู เก็บไว้ที่นี่ตลอด</div>
+    <div class="modal-list" id="modalList"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- DATA ---------- */
+const HSK1 = [
+["爱","ài","รัก"],["八","bā","แปด"],["爸爸","bàba","พ่อ"],["杯子","bēizi","แก้ว"],
+["北京","Běijīng","ปักกิ่ง"],["本","běn","เล่ม (ลักษณนามหนังสือ)"],["不客气","bú kèqi","ไม่เป็นไร"],
+["不","bù","ไม่"],["菜","cài","กับข้าว"],["茶","chá","ชา"],["吃","chī","กิน"],
+["出租车","chūzūchē","แท็กซี่"],["打电话","dǎ diànhuà","โทรศัพท์หา"],["大","dà","ใหญ่"],
+["的","de","(คำเชื่อมแสดงความเป็นเจ้าของ)"],["点","diǎn","โมง / จุด"],["电脑","diànnǎo","คอมพิวเตอร์"],
+["电视","diànshì","โทรทัศน์"],["电影","diànyǐng","ภาพยนตร์"],["东西","dōngxi","สิ่งของ"],
+["都","dōu","ทั้งหมด"],["读","dú","อ่าน"],["对不起","duìbuqǐ","ขอโทษ"],["多","duō","มาก"],
+["多少","duōshao","เท่าไหร่"],["儿子","érzi","ลูกชาย"],["二","èr","สอง"],
+["饭店","fàndiàn","ร้านอาหาร/โรงแรม"],["飞机","fēijī","เครื่องบิน"],["分钟","fēnzhōng","นาที"],
+["高兴","gāoxìng","ดีใจ"],["个","gè","อัน (ลักษณนามทั่วไป)"],["工作","gōngzuò","งาน"],
+["狗","gǒu","หมา"],["汉语","Hànyǔ","ภาษาจีน"],["好","hǎo","ดี"],["号","hào","วันที่/เบอร์"],
+["喝","hē","ดื่ม"],["和","hé","และ"],["很","hěn","มาก"],["后面","hòumiàn","ข้างหลัง"],
+["回","huí","กลับ"],["会","huì","จะ/เป็น (ความสามารถ)"],["几","jǐ","กี่"],["家","jiā","บ้าน"],
+["叫","jiào","ชื่อว่า"],["今天","jīntiān","วันนี้"],["九","jiǔ","เก้า"],["开","kāi","เปิด"],
+["看","kàn","ดู"],["看见","kànjiàn","เห็น"],["块","kuài","บาท (หน่วยเงิน)"],["来","lái","มา"],
+["老师","lǎoshī","ครู"],["了","le","(คำช่วยแสดงอดีต/เปลี่ยนแปลง)"],["冷","lěng","หนาว"],
+["里","lǐ","ข้างใน"],["六","liù","หก"],["妈妈","māma","แม่"],["吗","ma","(คำลงท้ายคำถาม)"],
+["买","mǎi","ซื้อ"],["猫","māo","แมว"],["没关系","méi guānxi","ไม่เป็นไร"],
+["没有","méiyǒu","ไม่มี"],["每","měi","ทุก"],["妹妹","mèimei","น้องสาว"],["米饭","mǐfàn","ข้าวสวย"],
+["明天","míngtiān","พรุ่งนี้"],["名字","míngzi","ชื่อ"],["哪","nǎ","ไหน"],["哪儿","nǎr","ที่ไหน"],
+["那","nà","นั่น"],["呢","ne","(คำลงท้ายคำถาม)"],["能","néng","สามารถ"],["你","nǐ","คุณ"],
+["年","nián","ปี"],["女儿","nǚ'ér","ลูกสาว"],["朋友","péngyou","เพื่อน"],["漂亮","piàoliang","สวย"],
+["苹果","píngguǒ","แอปเปิ้ล"],["七","qī","เจ็ด"],["钱","qián","เงิน"],["前面","qiánmiàn","ข้างหน้า"],
+["请","qǐng","เชิญ/กรุณา"],["去","qù","ไป"],["热","rè","ร้อน"],["人","rén","คน"],
+["认识","rènshi","รู้จัก"],["三","sān","สาม"],["商店","shāngdiàn","ร้านค้า"],["上","shàng","บน"],
+["上午","shàngwǔ","ตอนเช้า"],["少","shǎo","น้อย"],["谁","shéi","ใคร"],["什么","shénme","อะไร"],
+["十","shí","สิบ"],["时候","shíhou","เวลา"],["是","shì","คือ/ใช่"],["书","shū","หนังสือ"],
+["水","shuǐ","น้ำ"],["水果","shuǐguǒ","ผลไม้"],["睡觉","shuìjiào","นอน"],["说","shuō","พูด"],
+["四","sì","สี่"],["岁","suì","ปี (อายุ)"],["他","tā","เขา (ผู้ชาย)"],["她","tā","เธอ (ผู้หญิง)"],
+["太","tài","เกินไป/มาก"],["天气","tiānqì","อากาศ"],["听","tīng","ฟัง"],["同学","tóngxué","เพื่อนร่วมชั้น"],
+["喂","wèi","ฮัลโหล"],["我","wǒ","ฉัน"],["我们","wǒmen","พวกเรา"],["五","wǔ","ห้า"],
+["喜欢","xǐhuan","ชอบ"],["下","xià","ล่าง"],["下午","xiàwǔ","ตอนบ่าย"],["下雨","xiàyǔ","ฝนตก"],
+["先生","xiānsheng","คุณผู้ชาย/มิสเตอร์"],["现在","xiànzài","ตอนนี้"],["想","xiǎng","คิด/อยากจะ"],
+["小","xiǎo","เล็ก"],["小姐","xiǎojiě","คุณผู้หญิง/มิส"],["些","xiē","บ้าง"],["写","xiě","เขียน"],
+["谢谢","xièxie","ขอบคุณ"],["星期","xīngqī","สัปดาห์"],["学生","xuésheng","นักเรียน"],
+["学习","xuéxí","เรียน"],["学校","xuéxiào","โรงเรียน"],["一","yī","หนึ่ง"],["一点儿","yìdiǎnr","นิดหน่อย"],
+["衣服","yīfu","เสื้อผ้า"],["医生","yīshēng","หมอ"],["医院","yīyuàn","โรงพยาบาล"],["椅子","yǐzi","เก้าอี้"],
+["有","yǒu","มี"],["月","yuè","เดือน"],["在","zài","อยู่ที่"],["再见","zàijiàn","ลาก่อน"],
+["怎么","zěnme","ยังไง"],["怎么样","zěnmeyàng","เป็นอย่างไร"],["这","zhè","นี่"],
+["中国","Zhōngguó","ประเทศจีน"],["中午","zhōngwǔ","ตอนเที่ยง"],["住","zhù","อาศัยอยู่"],
+["桌子","zhuōzi","โต๊ะ"],["字","zì","ตัวอักษร"],["昨天","zuótiān","เมื่อวาน"],["坐","zuò","นั่ง"],
+["做","zuò","ทำ"]
+];
+
+const HSK2 = [
+["吧","ba","(คำลงท้ายเชิงชักชวน)"],["白","bái","ขาว"],["百","bǎi","ร้อย"],["帮助","bāngzhù","ช่วยเหลือ"],
+["报纸","bàozhǐ","หนังสือพิมพ์"],["比","bǐ","เปรียบเทียบ"],["别","bié","อย่า"],["宾馆","bīnguǎn","โรงแรม"],
+["长","cháng","ยาว"],["唱歌","chànggē","ร้องเพลง"],["出","chū","ออก"],["穿","chuān","สวมใส่"],
+["次","cì","ครั้ง"],["从","cóng","จาก"],["错","cuò","ผิด"],["打篮球","dǎ lánqiú","เล่นบาสเก็ตบอล"],
+["大家","dàjiā","ทุกคน"],["到","dào","ถึง"],["得","de","(คำช่วยขยายผล)"],["等","děng","รอ"],
+["弟弟","dìdi","น้องชาย"],["第一","dì yī","ที่หนึ่ง"],["懂","dǒng","เข้าใจ"],["对","duì","ถูกต้อง"],
+["房间","fángjiān","ห้อง"],["非常","fēicháng","อย่างมาก"],["服务员","fúwùyuán","พนักงานบริการ"],
+["高","gāo","สูง"],["告诉","gàosu","บอก"],["哥哥","gēge","พี่ชาย"],["给","gěi","ให้"],
+["公共汽车","gōnggòngqìchē","รถเมล์"],["公司","gōngsī","บริษัท"],["贵","guì","แพง"],
+["过","guò","ผ่าน/เคย"],["还","hái","ยัง"],["还是","háishi","หรือว่า"],["孩子","háizi","เด็ก"],
+["好吃","hǎochī","อร่อย"],["黑","hēi","ดำ"],["红","hóng","แดง"],["后来","hòulái","หลังจากนั้น"],
+["欢迎","huānyíng","ยินดีต้อนรับ"],["护照","hùzhào","พาสปอร์ต"],["话","huà","คำพูด"],
+["坏","huài","เสีย/แย่"],["黄","huáng","เหลือง"],["回答","huídá","ตอบ"],["会议","huìyì","ประชุม"],
+["或者","huòzhě","หรือ"],["机场","jīchǎng","สนามบิน"],["鸡蛋","jīdàn","ไข่ไก่"],["件","jiàn","ชิ้น (ลักษณนาม)"],
+["教室","jiàoshì","ห้องเรียน"],["姐姐","jiějie","พี่สาว"],["介绍","jièshào","แนะนำ"],["进","jìn","เข้า"],
+["近","jìn","ใกล้"],["就","jiù","ก็"],["觉得","juéde","รู้สึกว่า"],["咖啡","kāfēi","กาแฟ"],
+["开始","kāishǐ","เริ่มต้น"],["考试","kǎoshì","สอบ"],["可能","kěnéng","อาจจะ"],["可以","kěyǐ","สามารถ"],
+["课","kè","วิชา/บทเรียน"],["快","kuài","เร็ว"],["快乐","kuàilè","มีความสุข"],["累","lèi","เหนื่อย"],
+["离","lí","ห่างจาก"],["两","liǎng","สอง (หน้าลักษณนาม)"],["零","líng","ศูนย์"],["路","lù","ถนน"],
+["旅游","lǚyóu","ท่องเที่ยว"],["马","mǎ","ม้า"],["马上","mǎshàng","ทันที"],["慢","màn","ช้า"],
+["忙","máng","ยุ่ง"],["门","mén","ประตู"],["面条","miàntiáo","ก๋วยเตี๋ยว/บะหมี่"],["拿","ná","หยิบ"],
+["哪里","nǎlǐ","ที่ไหน"],["男","nán","ชาย"],["难","nán","ยาก"],["您","nín","ท่าน (สุภาพ)"],
+["牛奶","niúnǎi","นม"],["女","nǚ","หญิง"],["旁边","pángbiān","ข้างๆ"],["跑步","pǎobù","วิ่งออกกำลังกาย"],
+["便宜","piányi","ถูก (ราคา)"],["票","piào","ตั๋ว"],["妻子","qīzi","ภรรยา"],["起床","qǐchuáng","ตื่นนอน"],
+["千","qiān","พัน"],["铅笔","qiānbǐ","ดินสอ"],["晴","qíng","ท้องฟ้าแจ่มใส"],["去年","qùnián","ปีที่แล้ว"],
+["让","ràng","ให้/อนุญาต"],["日","rì","วัน"],["上班","shàngbān","ไปทำงาน"],["身体","shēntǐ","ร่างกาย"],
+["生病","shēngbìng","ป่วย"],["生日","shēngrì","วันเกิด"],["时间","shíjiān","เวลา"],["事情","shìqing","เรื่อง"],
+["手表","shǒubiǎo","นาฬิกาข้อมือ"],["手机","shǒujī","โทรศัพท์มือถือ"],["说话","shuōhuà","พูด"],
+["送","sòng","ส่ง/ให้ของขวัญ"],["虽然","suīrán","ถึงแม้ว่า"],["它","tā","มัน"],
+["踢足球","tī zúqiú","เตะฟุตบอล"],["题","tí","โจทย์/คำถาม"],["跳舞","tiàowǔ","เต้นรำ"],
+["外","wài","ข้างนอก"],["完","wán","เสร็จ"],["玩","wán","เล่น"],["晚上","wǎnshang","ตอนเย็น/กลางคืน"],
+["往","wǎng","ไปทาง"],["为","wèi","เพื่อ"],["为什么","wèishénme","ทำไม"],["问","wèn","ถาม"],
+["问题","wèntí","ปัญหา"],["西瓜","xīguā","แตงโม"],["希望","xīwàng","หวังว่า"],["洗","xǐ","ล้าง"],
+["小时","xiǎoshí","ชั่วโมง"],["笑","xiào","หัวเราะ/ยิ้ม"],["新","xīn","ใหม่"],["新闻","xīnwén","ข่าว"],
+["姓","xìng","นามสกุล"],["休息","xiūxi","พักผ่อน"],["雪","xuě","หิมะ"],["颜色","yánsè","สี"],
+["眼睛","yǎnjing","ดวงตา"],["羊肉","yángròu","เนื้อแกะ"],["药","yào","ยา"],["要","yào","ต้องการ"],
+["也","yě","ก็เช่นกัน"],["一起","yìqǐ","ด้วยกัน"],["一样","yíyàng","เหมือนกัน"],["一直","yìzhí","ตลอด"],
+["阴","yīn","ท้องฟ้ามีเมฆครึ้ม"],["音乐","yīnyuè","ดนตรี"],["应该","yīnggāi","ควรจะ"],["游泳","yóuyǒng","ว่ายน้ำ"],
+["右边","yòubian","ข้างขวา"],["鱼","yú","ปลา"],["远","yuǎn","ไกล"],["运动","yùndòng","ออกกำลังกาย"],
+["再","zài","อีกครั้ง"],["早上","zǎoshang","ตอนเช้า"],["丈夫","zhàngfu","สามี"],["找","zhǎo","หา"],
+["着","zhe","(คำช่วยกำลังดำเนินอยู่)"],["真","zhēn","จริง"],["正在","zhèngzài","กำลัง"],
+["知道","zhīdao","รู้"],["准备","zhǔnbèi","เตรียมตัว"],["走","zǒu","เดิน"],["最","zuì","ที่สุด"],
+["左边","zuǒbian","ข้างซ้าย"]
+];
+
+const HSK3 = [
+["啊","a","(คำอุทานลงท้าย)"],["安静","ānjìng","เงียบสงบ"],["把","bǎ","(คำนำหน้ากรรม)"],
+["班","bān","ชั้นเรียน/ผลัด"],["搬","bān","ย้าย"],["办法","bànfǎ","วิธีการ"],
+["办公室","bàngōngshì","ห้องทำงาน"],["帮忙","bāngmáng","ช่วยเหลือ"],["包","bāo","ห่อ/กระเป๋า"],
+["饱","bǎo","อิ่ม"],["北方","běifāng","ภาคเหนือ"],["被","bèi","ถูก (แสดงกรรม)"],["笨","bèn","โง่"],
+["比较","bǐjiào","ค่อนข้าง"],["比赛","bǐsài","การแข่งขัน"],["必须","bìxū","ต้อง"],
+["变化","biànhuà","การเปลี่ยนแปลง"],["别人","biéren","คนอื่น"],["冰箱","bīngxiāng","ตู้เย็น"],
+["菜单","càidān","เมนูอาหาร"],["参加","cānjiā","เข้าร่วม"],["草","cǎo","หญ้า"],["层","céng","ชั้น"],
+["差","chà","ขาด/แย่"],["超市","chāoshì","ซูเปอร์มาร์เก็ต"],["成绩","chéngjì","ผลการเรียน"],
+["诚实","chéngshí","ซื่อสัตย์"],["迟到","chídào","มาสาย"],["出现","chūxiàn","ปรากฏขึ้น"],
+["除了","chúle","นอกจาก"],["词典","cídiǎn","พจนานุกรม"],["聪明","cōngming","ฉลาด"],
+["打扫","dǎsǎo","ทำความสะอาด"],["打算","dǎsuàn","วางแผน"],["带","dài","พก/นำ"],
+["但是","dànshì","แต่ว่า"],["当然","dāngrán","แน่นอน"],["灯","dēng","โคมไฟ"],
+["地方","dìfāng","สถานที่"],["地铁","dìtiě","รถไฟใต้ดิน"],["地图","dìtú","แผนที่"],
+["掉","diào","หล่น/ตก"],["调查","diàochá","สำรวจ"],["东","dōng","ทิศตะวันออก"],
+["动物","dòngwù","สัตว์"],["读书","dúshū","อ่านหนังสือ"],["段","duàn","ท่อน/ตอน"],
+["锻炼","duànliàn","ออกกำลังกาย"],["对话","duìhuà","บทสนทนา"],["多么","duōme","ช่างเสียจริง"],
+["饿","è","หิว"],["而且","érqiě","และยิ่งไปกว่านั้น"],["耳朵","ěrduo","หู"],["发","fā","ส่ง/แจก"],
+["发生","fāshēng","เกิดขึ้น"],["发现","fāxiàn","ค้นพบ"],["方便","fāngbiàn","สะดวก"],
+["方法","fāngfǎ","วิธี"],["方向","fāngxiàng","ทิศทาง"],["房子","fángzi","บ้าน"],["放","fàng","วาง"],
+["放心","fàngxīn","วางใจ"],["份","fèn","ส่วน (ลักษณนาม)"],["丰富","fēngfù","อุดมสมบูรณ์"],
+["否则","fǒuzé","มิฉะนั้น"],["附近","fùjìn","บริเวณใกล้เคียง"],["复习","fùxí","ทบทวน"],
+["干净","gānjìng","สะอาด"],["感冒","gǎnmào","เป็นหวัด"],["感兴趣","gǎn xìngqù","สนใจ"],
+["刚才","gāngcái","เมื่อกี้"],["个子","gèzi","รูปร่าง/ส่วนสูง"],["根据","gēnjù","อ้างอิงจาก"],
+["跟","gēn","กับ"],["更","gèng","ยิ่งกว่า"],["故事","gùshi","เรื่องเล่า"],["管理","guǎnlǐ","บริหารจัดการ"],
+["关","guān","ปิด"],["关系","guānxi","ความสัมพันธ์"],["关心","guānxīn","ห่วงใย"],
+["关于","guānyú","เกี่ยวกับ"],["国家","guójiā","ประเทศ"],["过去","guòqù","อดีต"],
+["害怕","hàipà","กลัว"],["好处","hǎochu","ข้อดี"],["好像","hǎoxiàng","ดูเหมือนว่า"],
+["号码","hàomǎ","หมายเลข"],["盒子","hézi","กล่อง"],["护士","hùshi","พยาบาล"],
+["花","huā","ดอกไม้/ใช้จ่าย"],["画","huà","วาดรูป"],["画儿","huàr","รูปภาพ"],
+["环境","huánjìng","สิ่งแวดล้อม"],["换","huàn","เปลี่ยน"],["活动","huódòng","กิจกรรม"],
+["几乎","jīhū","เกือบจะ"],["机会","jīhuì","โอกาส"],["极","jí","ที่สุด"],["即使","jíshǐ","แม้ว่า"],
+["记得","jìde","จำได้"],["计划","jìhuà","แผนการ"],["既然","jìrán","ในเมื่อ"],
+["继续","jìxù","ทำต่อไป"],["加班","jiābān","ทำงานล่วงเวลา"],["加油","jiāyóu","สู้ๆ"],
+["简单","jiǎndān","ง่าย"],["健康","jiànkāng","สุขภาพดี"],["建议","jiànyì","ข้อเสนอแนะ"],
+["将来","jiānglái","อนาคต"],["交","jiāo","ส่งมอบ"],["教","jiāo","สอน"],["教育","jiàoyù","การศึกษา"],
+["街道","jiēdào","ถนน"],["结婚","jiéhūn","แต่งงาน"],["结果","jiéguǒ","ผลลัพธ์"],
+["节目","jiémù","รายการ"],["节日","jiérì","เทศกาล"],["解决","jiějué","แก้ไขปัญหา"],
+["借","jiè","ยืม"],["经常","jīngcháng","บ่อยๆ"],["经过","jīngguò","ผ่าน (เหตุการณ์)"],
+["经验","jīngyàn","ประสบการณ์"],["久","jiǔ","นาน"],["旧","jiù","เก่า"],["举","jǔ","ยกขึ้น"],
+["决定","juédìng","ตัดสินใจ"],["可爱","kě'ài","น่ารัก"],["渴","kě","กระหายน้ำ"],
+["刻","kè","15 นาที"],["客人","kèrén","แขก"],["空调","kōngtiáo","แอร์"],["恐怕","kǒngpà","เกรงว่า"],
+["苦","kǔ","ขม"],["裤子","kùzi","กางเกง"],["筷子","kuàizi","ตะเกียบ"],["困","kùn","ง่วง"],
+["垃圾桶","lājītǒng","ถังขยะ"],["拉","lā","ดึง"],["辣","là","เผ็ด"],["来自","láizì","มาจาก"],
+["蓝","lán","สีน้ำเงิน"],["老","lǎo","แก่"],["离开","líkāi","จากไป"],["礼物","lǐwù","ของขวัญ"],
+["理发","lǐfà","ตัดผม"],["历史","lìshǐ","ประวัติศาสตร์"],["厉害","lìhai","เก่งมาก/หนักหน่วง"],
+["联系","liánxì","ติดต่อ"],["凉快","liángkuai","เย็นสบาย"],["了解","liǎojiě","เข้าใจ"],
+["邻居","línjū","เพื่อนบ้าน"],["留学","liúxué","ไปเรียนต่างประเทศ"],["楼","lóu","ตึก"],
+["乱","luàn","ยุ่งเหยิง"],["旅行","lǚxíng","เดินทางท่องเที่ยว"],["律师","lǜshī","ทนายความ"],
+["麻烦","máfan","ยุ่งยาก"],["马虎","mǎhu","สะเพร่า"],["满意","mǎnyì","พอใจ"],["帽子","màozi","หมวก"],
+["米","mǐ","เมตร"],["密码","mìmǎ","รหัสผ่าน"],["免费","miǎnfèi","ฟรี"],["秒","miǎo","วินาที"],
+["明白","míngbai","เข้าใจ"],["母亲","mǔqīn","มารดา"],["目的","mùdì","จุดประสงค์"],
+["耐心","nàixīn","ความอดทน"],["南","nán","ทิศใต้"],["难过","nánguò","เสียใจ"],
+["其实","qíshí","ที่จริงแล้ว"],["其他","qítā","อื่นๆ"],["奇怪","qíguài","แปลก"],["骑","qí","ขี่"],
+["其中","qízhōng","ในจำนวนนั้น"],["千万","qiānwàn","เด็ดขาด/อย่างยิ่ง"],["签证","qiānzhèng","วีซ่า"],
+["钱包","qiánbāo","กระเป๋าสตางค์"],["清楚","qīngchu","ชัดเจน"],["请假","qǐngjià","ลางาน"],
+["秋","qiū","ฤดูใบไม้ร่วง"],["取","qǔ","รับ/ถอน"],["全部","quánbù","ทั้งหมด"],
+["缺点","quēdiǎn","ข้อเสีย"],["却","què","แต่กลับ"],["然后","ránhòu","หลังจากนั้น"],
+["热情","rèqíng","กระตือรือร้น/เป็นมิตร"],["认为","rènwéi","คิดว่า"],["认真","rènzhēn","ตั้งใจ/จริงจัง"],
+["容易","róngyì","ง่าย"],["如果","rúguǒ","ถ้า"],["散步","sànbù","เดินเล่น"],["森林","sēnlín","ป่า"],
+["沙发","shāfā","โซฟา"],["伤心","shāngxīn","เสียใจ"],["上网","shàngwǎng","เล่นเน็ต"],
+["稍微","shāowēi","เล็กน้อย"],["社会","shèhuì","สังคม"],["生气","shēngqì","โกรธ"],
+["声音","shēngyīn","เสียง"],["十分","shífēn","อย่างมาก"],["使","shǐ","ทำให้"],
+["使用","shǐyòng","ใช้งาน"],["世纪","shìjì","ศตวรรษ"],["世界","shìjiè","โลก"],
+["适合","shìhé","เหมาะสม"],["瘦","shòu","ผอม"],["输","shū","แพ้"],["熟悉","shúxī","คุ้นเคย"],
+["数量","shùliàng","ปริมาณ"],["数字","shùzì","ตัวเลข"],["帅","shuài","หล่อ"],
+["顺利","shùnlì","ราบรื่น"],["说明","shuōmíng","อธิบาย"],["死","sǐ","ตาย"],
+["速度","sùdù","ความเร็ว"],["随便","suíbiàn","ตามสะดวก"],["所以","suǒyǐ","ดังนั้น"],
+["它们","tāmen","พวกมัน"],["抬","tái","ยกขึ้น"],["太阳","tàiyáng","ดวงอาทิตย์"],
+["态度","tàidu","ทัศนคติ"],["特别","tèbié","พิเศษ"],["提高","tígāo","ยกระดับ/พัฒนา"],
+["提前","tíqián","ล่วงหน้า"],["体育","tǐyù","พลศึกษา/กีฬา"],["甜","tián","หวาน"],
+["条件","tiáojiàn","เงื่อนไข"],["同时","tóngshí","ในขณะเดียวกัน"],["同意","tóngyì","เห็นด้วย"],
+["突然","tūrán","ทันใดนั้น"],["图书馆","túshūguǎn","ห้องสมุด"],["腿","tuǐ","ขา"],
+["外国","wàiguó","ต่างประเทศ"],["完成","wánchéng","ทำสำเร็จ"],["完全","wánquán","อย่างสมบูรณ์"],
+["碗","wǎn","ชาม"],["万一","wànyī","เผื่อว่า"],["往往","wǎngwǎng","บ่อยครั้ง"],
+["为了","wèile","เพื่อที่จะ"],["味道","wèidao","รสชาติ"],["温度","wēndù","อุณหภูมิ"],
+["文化","wénhuà","วัฒนธรรม"],["无论","wúlùn","ไม่ว่า"],["误会","wùhuì","เข้าใจผิด"],
+["西","xī","ทิศตะวันตก"],["习惯","xíguàn","ความเคยชิน"],["洗手间","xǐshǒujiān","ห้องน้ำ"],
+["先","xiān","ก่อน"],["相反","xiāngfǎn","ตรงกันข้าม"],["相信","xiāngxìn","เชื่อ"],
+["香","xiāng","หอม"],["详细","xiángxì","ละเอียด"],["响","xiǎng","ดัง (เสียง)"],
+["向","xiàng","ไปทาง"],["像","xiàng","เหมือน"],["消息","xiāoxi","ข่าวสาร"],
+["小心","xiǎoxīn","ระวัง"],["校长","xiàozhǎng","ผู้อำนวยการโรงเรียน"],["效果","xiàoguǒ","ประสิทธิผล"],
+["心情","xīnqíng","อารมณ์"],["辛苦","xīnkǔ","ลำบาก"],["信封","xìnfēng","ซองจดหมาย"],
+["信息","xìnxī","ข้อมูลข่าวสาร"],["信心","xìnxīn","ความมั่นใจ"],["兴趣","xìngqù","ความสนใจ"],
+["性格","xìnggé","นิสัย"],["需要","xūyào","ต้องการ"],["选择","xuǎnzé","เลือก"],
+["牙膏","yágāo","ยาสีฟัน"],["研究","yánjiū","วิจัย"],["眼镜","yǎnjìng","แว่นตา"],
+["演出","yǎnchū","การแสดง"],["养成","yǎngchéng","สร้างนิสัย"],["样子","yàngzi","รูปลักษณ์"],
+["邀请","yāoqǐng","เชิญ"],["要是","yàoshi","ถ้า"],["钥匙","yàoshi","กุญแจ"],["也许","yěxǔ","บางที"],
+["一般","yìbān","ทั่วไป"],["一定","yídìng","แน่นอน"],["一共","yígòng","รวมทั้งหมด"],
+["一会儿","yíhuìr","สักครู่"],["一切","yíqiè","ทั้งหมด"],["一下","yíxià","สักครู่/ลอง"],
+["以后","yǐhòu","หลังจากนี้"],["以前","yǐqián","ก่อนหน้านี้"],["以为","yǐwéi","เข้าใจว่า"],
+["以及","yǐjí","รวมถึง"],["艺术","yìshù","ศิลปะ"],["意见","yìjiàn","ความคิดเห็น"],
+["意思","yìsi","ความหมาย"],["因为","yīnwèi","เพราะว่า"],["引起","yǐnqǐ","ก่อให้เกิด"],
+["印象","yìnxiàng","ความประทับใจ"],["影响","yǐngxiǎng","อิทธิพล/มีผลกระทบ"],
+["永远","yǒngyuǎn","ตลอดไป"],["优点","yōudiǎn","ข้อดี"],["尤其","yóuqí","โดยเฉพาะอย่างยิ่ง"],
+["由于","yóuyú","เนื่องจาก"],["邮局","yóujú","ที่ทำการไปรษณีย์"],["友好","yǒuhǎo","เป็นมิตร"],
+["有名","yǒumíng","มีชื่อเสียง"],["又","yòu","อีกครั้ง"],["于是","yúshì","ดังนั้น"],
+["愉快","yúkuài","ร่าเริง"],["与","yǔ","กับ"],["羽毛球","yǔmáoqiú","แบดมินตัน"],
+["语法","yǔfǎ","ไวยากรณ์"],["语言","yǔyán","ภาษา"],["预习","yùxí","เตรียมบทเรียนล่วงหน้า"],
+["原来","yuánlái","แต่เดิม/ที่แท้จริง"],["原因","yuányīn","สาเหตุ"],["约会","yuēhuì","นัดหมาย"],
+["阅读","yuèdú","อ่าน"],["云","yún","เมฆ"],["允许","yǔnxǔ","อนุญาต"],["运气","yùnqi","โชค"],
+["杂志","zázhì","นิตยสาร"],["咱们","zánmen","พวกเรา"],["暂时","zànshí","ชั่วคราว"],
+["责任","zérèn","ความรับผิดชอบ"],["增加","zēngjiā","เพิ่มขึ้น"],["招聘","zhāopìn","รับสมัครงาน"],
+["照顾","zhàogù","ดูแล"],["照片","zhàopiàn","รูปถ่าย"],["照相机","zhàoxiàngjī","กล้องถ่ายรูป"],
+["真正","zhēnzhèng","แท้จริง"],["整理","zhěnglǐ","จัดระเบียบ"],["正常","zhèngcháng","ปกติ"],
+["正好","zhènghǎo","พอดี"],["正确","zhèngquè","ถูกต้อง"],["支持","zhīchí","สนับสนุน"],
+["知识","zhīshi","ความรู้"],["直接","zhíjiē","โดยตรง"],["只","zhǐ","เพียงแค่"],
+["只要","zhǐyào","ขอเพียง"],["只有","zhǐyǒu","มีเพียง"],["指","zhǐ","ชี้"],
+["质量","zhìliàng","คุณภาพ"],["重点","zhòngdiǎn","จุดสำคัญ"],["重要","zhòngyào","สำคัญ"],
+["周围","zhōuwéi","บริเวณโดยรอบ"],["主要","zhǔyào","หลัก/สำคัญ"],["祝贺","zhùhè","แสดงความยินดี"],
+["著名","zhùmíng","มีชื่อเสียง"],["专业","zhuānyè","วิชาเอก"],["准确","zhǔnquè","แม่นยำ"],
+["准时","zhǔnshí","ตรงเวลา"],["仔细","zǐxì","ละเอียดรอบคอบ"],["自己","zìjǐ","ตัวเอง"],
+["自然","zìrán","ธรรมชาติ"],["自信","zìxìn","มั่นใจในตัวเอง"],["总是","zǒngshì","เสมอ"],
+["总结","zǒngjié","สรุป"],["租","zū","เช่า"],["最后","zuìhòu","สุดท้าย"],["最近","zuìjìn","ช่วงนี้/เร็วๆนี้"],
+["尊重","zūnzhòng","เคารพ"],["作业","zuòyè","การบ้าน"],["作者","zuòzhě","ผู้เขียน"]
+];
+
+const HSK4 = [
+["爱情","àiqíng","ความรัก"],["安排","ānpái","จัดการ/เตรียมการ"],["安全","ānquán","ปลอดภัย"],
+["按时","ànshí","ตรงเวลา"],["按照","ànzhào","ตามที่"],["百分之","bǎifēnzhī","เปอร์เซ็นต์"],
+["棒","bàng","เก่ง/ดีเยี่ยม"],["包括","bāokuò","รวมถึง"],["保护","bǎohù","ปกป้อง"],
+["保证","bǎozhèng","รับประกัน"],["报告","bàogào","รายงาน"],["抱","bào","กอด"],
+["抱歉","bàoqiàn","ขอโทษ"],["悲观","bēiguān","มองโลกในแง่ร้าย"],["背","bèi","ท่องจำ/แบก"],
+["本来","běnlái","เดิมที"],["笔记本","bǐjìběn","สมุดโน้ต/โน้ตบุ๊ก"],["毕业","bìyè","จบการศึกษา"],
+["遍","biàn","ครั้ง/รอบ"],["标准","biāozhǔn","มาตรฐาน"],["表格","biǎogé","แบบฟอร์ม"],
+["表示","biǎoshì","แสดงออก"],["表演","biǎoyǎn","การแสดง"],["表扬","biǎoyáng","ชมเชย"],
+["并且","bìngqiě","และยิ่งไปกว่านั้น"],["博士","bóshì","ปริญญาเอก"],["不管","bùguǎn","ไม่ว่า"],
+["不过","búguò","แต่ว่า"],["不仅","bùjǐn","ไม่เพียงแต่"],["部分","bùfen","ส่วนหนึ่ง"],
+["材料","cáiliào","วัตถุดิบ/เอกสาร"],["参观","cānguān","เยี่ยมชม"],["餐厅","cāntīng","ร้านอาหาร"],
+["差不多","chàbuduō","เกือบจะ"],["长途","chángtú","ทางไกล"],["场","chǎng","สนาม/ครั้ง"],
+["超过","chāoguò","เกินกว่า"],["成功","chénggōng","ประสบความสำเร็จ"],["成为","chéngwéi","กลายเป็น"],
+["诚恳","chéngkěn","จริงใจ"],["吃惊","chījīng","ตกใจ"],["重新","chóngxīn","ใหม่อีกครั้ง"],
+["抽烟","chōuyān","สูบบุหรี่"],["出差","chūchāi","ไปทำงานนอกสถานที่"],["出发","chūfā","ออกเดินทาง"],
+["出生","chūshēng","เกิด"],["出版","chūbǎn","ตีพิมพ์"],["除非","chúfēi","เว้นแต่"],
+["传真","chuánzhēn","แฟกซ์"],["窗户","chuānghu","หน้าต่าง"],["词语","cíyǔ","คำศัพท์"],
+["从来","cónglái","ตั้งแต่ไหนแต่ไรมา"],["粗心","cūxīn","สะเพร่า"],["存在","cúnzài","มีอยู่"],
+["错误","cuòwù","ข้อผิดพลาด"],["答案","dá'àn","คำตอบ"],["打扮","dǎbàn","แต่งตัว"],
+["打折","dǎzhé","ลดราคา"],["大概","dàgài","โดยประมาณ"],["大使馆","dàshǐguǎn","สถานทูต"],
+["大约","dàyuē","ประมาณ"],["代表","dàibiǎo","ตัวแทน"],["代替","dàitì","แทนที่"],
+["贷款","dàikuǎn","เงินกู้"],["单位","dānwèi","หน่วยงาน"],["单纯","dānchún","เรียบง่าย/บริสุทธิ์"],
+["当地","dāngdì","ท้องถิ่น"],["当时","dāngshí","ขณะนั้น"],["导游","dǎoyóu","ไกด์นำเที่ยว"],
+["到底","dàodǐ","ท้ายที่สุด"],["道歉","dàoqiàn","ขอโทษ"],["登机牌","dēngjīpái","บอร์ดดิ้งพาส"],
+["等于","děngyú","เท่ากับ"],["的确","díquè","แน่นอน/จริงๆ"],["地球","dìqiú","โลก (ดาวเคราะห์)"],
+["地址","dìzhǐ","ที่อยู่"],["点头","diǎntóu","พยักหน้า"],["钓鱼","diàoyú","ตกปลา"],
+["顶","dǐng","ยอด/ด้านบน"],["动作","dòngzuò","ท่าทาง/การเคลื่อนไหว"],["豆腐","dòufu","เต้าหู้"],
+["独立","dúlì","อิสระ"],["对比","duìbǐ","เปรียบเทียบ"],["对方","duìfāng","อีกฝ่าย"],
+["对象","duìxiàng","เป้าหมาย/แฟน"],["儿童","értóng","เด็ก"],["发票","fāpiào","ใบเสร็จ"],
+["发展","fāzhǎn","พัฒนา"],["法律","fǎlǜ","กฎหมาย"],["翻译","fānyì","แปลภาษา"],
+["反而","fǎn'ér","กลับ (ตรงกันข้าม)"],["反映","fǎnyìng","สะท้อนให้เห็น"],["方式","fāngshì","วิธีการ"],
+["房东","fángdōng","เจ้าของบ้านเช่า"],["放弃","fàngqì","ยอมแพ้/ละทิ้ง"],["风景","fēngjǐng","ทัศนียภาพ"],
+["否定","fǒudìng","ปฏิเสธ"],["否认","fǒurèn","ปฏิเสธ"],["服务","fúwù","บริการ"],
+["父亲","fùqīn","บิดา"],["负责","fùzé","รับผิดชอบ"],["副","fù","รอง (ตำแหน่ง)"],["富","fù","ร่ำรวย"],
+["改变","gǎibiàn","เปลี่ยนแปลง"],["干杯","gānbēi","ชนแก้ว"],["赶","gǎn","เร่ง/รีบ"],["敢","gǎn","กล้า"],
+["钢铁","gāngtiě","เหล็กกล้า"],["高级","gāojí","ระดับสูง"],["胳膊","gēbo","แขน"],["各","gè","แต่ละ"],
+["工资","gōngzī","เงินเดือน"],["公里","gōnglǐ","กิโลเมตร"],["公平","gōngpíng","ยุติธรรม"],
+["功夫","gōngfu","กังฟู/เวลาที่ใช้"],["共同","gòngtóng","ร่วมกัน"],["购物","gòuwù","ช้อปปิ้ง"],
+["估计","gūjì","ประเมิน"],["古代","gǔdài","สมัยโบราณ"],["鼓励","gǔlì","ให้กำลังใจ"],["挂","guà","แขวน"],
+["拐弯","guǎiwān","เลี้ยว"],["关键","guānjiàn","สำคัญที่สุด/กุญแจสำคัญ"],["观察","guānchá","สังเกตการณ์"],
+["观众","guānzhòng","ผู้ชม"],["广播","guǎngbō","กระจายเสียง/วิทยุ"],["广告","guǎnggào","โฆษณา"],
+["逛","guàng","เดินเล่น/เดินเที่ยว"],["规定","guīdìng","กฎระเบียบ"],["国籍","guójí","สัญชาติ"],
+["国际","guójì","นานาชาติ"],["过程","guòchéng","กระบวนการ"],["海洋","hǎiyáng","มหาสมุทร"],
+["含","hán","บรรจุ/มี"],["汗","hàn","เหงื่อ"],["好客","hàokè","ต้อนรับแขก"],["合格","hégé","ผ่านเกณฑ์"],
+["合适","héshì","เหมาะสม"],["呼吸","hūxī","หายใจ"],["忽然","hūrán","ทันใดนั้น"],
+["互联网","hùliánwǎng","อินเทอร์เน็ต"],["互相","hùxiāng","ซึ่งกันและกัน"],["怀疑","huáiyí","สงสัย"],
+["回忆","huíyì","ความทรงจำ"],["活泼","huópō","ร่าเริงมีชีวิตชีวา"],["获得","huòdé","ได้รับ"],
+["基本","jīběn","พื้นฐาน"],["积极","jījí","กระตือรือร้น"],["积累","jīlěi","สั่งสม"],
+["激动","jīdòng","ตื่นเต้น"],["及时","jíshí","ทันเวลา"],["急","jí","รีบ/ด่วน"],["计算","jìsuàn","คำนวณ"],
+["记者","jìzhě","นักข่าว"],["技术","jìshù","เทคโนโลยี"],["坚持","jiānchí","ยืนหยัด"],
+["减肥","jiǎnféi","ลดความอ้วน"],["减少","jiǎnshǎo","ลดลง"],["建立","jiànlì","สร้างขึ้น"],
+["建筑","jiànzhù","สิ่งปลูกสร้าง"],["将","jiāng","จะ (อนาคต)"],["奖金","jiǎngjīn","เงินรางวัล/โบนัส"],
+["降低","jiàngdī","ลดลง"],["降落","jiàngluò","ลงจอด"],["交流","jiāoliú","แลกเปลี่ยน"],
+["交通","jiāotōng","การจราจร"],["郊区","jiāoqū","ชานเมือง"],["骄傲","jiāo'ào","หยิ่งผยอง/ภาคภูมิใจ"],
+["教授","jiàoshòu","ศาสตราจารย์"],["教练","jiàoliàn","โค้ช"],["接受","jiēshòu","ยอมรับ"],
+["接着","jiēzhe","จากนั้น"],["结论","jiélùn","บทสรุป"],["禁止","jìnzhǐ","ห้าม"],
+["京剧","jīngjù","งิ้วปักกิ่ง"],["精彩","jīngcǎi","ยอดเยี่ยม"],["经济","jīngjì","เศรษฐกิจ"],
+["竞争","jìngzhēng","การแข่งขัน"],["镜子","jìngzi","กระจกเงา"],["究竟","jiūjìng","ตกลงแล้ว/แท้จริง"],
+["举办","jǔbàn","จัดขึ้น"],["举行","jǔxíng","จัดขึ้น"],["拒绝","jùjué","ปฏิเสธ"],
+["具体","jùtǐ","ที่เป็นรูปธรรม"],["决赛","juésài","รอบชิงชนะเลิศ"],["角色","juésè","บทบาท"],
+["夸","kuā","ชม"],["矿泉水","kuàngquánshuǐ","น้ำแร่"],["困难","kùnnan","ความยากลำบาก"],
+["垃圾","lājī","ขยะ"],["来不及","láibují","ไม่ทัน"],["浪费","làngfèi","สิ้นเปลือง"],
+["浪漫","làngmàn","โรแมนติก"],["老实","lǎoshi","ซื่อสัตย์"],["冷静","lěngjìng","ใจเย็น"],
+["礼貌","lǐmào","มารยาท"],["理解","lǐjiě","เข้าใจ"],["理想","lǐxiǎng","อุดมคติ/ความฝัน"],
+["力气","lìqi","แรง"],["连","lián","แม้แต่"],["两者","liǎngzhě","ทั้งสอง"],
+["了不起","liǎobuqǐ","ยอดเยี่ยม"],["零钱","língqián","เงินทอน/เงินย่อย"],["另外","lìngwài","นอกจากนี้"],
+["流利","liúlì","คล่องแคล่ว"],["流行","liúxíng","ได้รับความนิยม"],["毛病","máobìng","ปัญหา/ข้อบกพร่อง"],
+["矛盾","máodùn","ความขัดแย้ง"],["美丽","měilì","สวยงาม"],["迷路","mílù","หลงทาง"],
+["密切","mìqiè","ใกล้ชิด"],["面对","miànduì","เผชิญหน้า"],["面积","miànjī","พื้นที่"],
+["明显","míngxiǎn","ชัดเจน"],["命令","mìnglìng","คำสั่ง"],["难道","nándào","ไม่ใช่หรือ"],
+["恼火","nǎohuǒ","โมโห"],["内容","nèiróng","เนื้อหา"],["能力","nénglì","ความสามารถ"],
+["年龄","niánlíng","อายุ"],["农村","nóngcūn","ชนบท"],["浓","nóng","เข้มข้น"],["偶尔","ǒu'ěr","บางครั้ง"],
+["排队","páiduì","เข้าคิว"],["判断","pànduàn","ตัดสิน"],["陪","péi","เป็นเพื่อน"],
+["批评","pīpíng","วิจารณ์"],["皮肤","pífū","ผิวหนัง"],["脾气","píqi","อารมณ์/นิสัย"],
+["篇","piān","บท (ลักษณนามบทความ)"],["骗","piàn","หลอกลวง"],["乒乓球","pīngpāngqiú","ปิงปอง"],
+["平时","píngshí","ปกติ/เวลาปกติ"],["评价","píngjià","ประเมินค่า"],["其余","qíyú","ที่เหลือ"],
+["企业","qǐyè","กิจการ/องค์กร"],["起来","qǐlái","ลุกขึ้น/เริ่มต้น"],["气候","qìhòu","ภูมิอากาศ"],
+["谦虚","qiānxū","ถ่อมตัว"],["签","qiān","เซ็นชื่อ"],["前途","qiántú","อนาคต"],["浅","qiǎn","ตื้น"],
+["巧克力","qiǎokèlì","ช็อกโกแลต"],["亲戚","qīnqi","ญาติ"],["勤奋","qínfèn","ขยันขันแข็ง"],
+["青","qīng","สีเขียว/หนุ่มสาว"],["轻松","qīngsōng","ผ่อนคลาย"],["情况","qíngkuàng","สถานการณ์"],
+["穷","qióng","ยากจน"],["区别","qūbié","ความแตกต่าง"],["取得","qǔdé","ได้รับ"],
+["全面","quánmiàn","รอบด้าน"],["缺乏","quēfá","ขาดแคลน"],["确实","quèshí","แน่นอน"],
+["群","qún","กลุ่ม"],["然而","rán'ér","แต่ทว่า"],["热闹","rènao","คึกคัก"],["人才","réncái","ผู้มีความสามารถ"],
+["人口","rénkǒu","ประชากร"],["人生","rénshēng","ชีวิตมนุษย์"],["任何","rènhé","ใดๆ"],
+["任务","rènwu","ภารกิจ"],["仍然","réngrán","ยังคง"],["日记","rìjì","ไดอารี่"],["如何","rúhé","อย่างไร"],
+["入口","rùkǒu","ทางเข้า"],["散","sàn","กระจาย"],["沙滩","shātān","ชายหาด"],["申请","shēnqǐng","สมัคร/ยื่นคำร้อง"],
+["深","shēn","ลึก"],["甚至","shènzhì","แม้กระทั่ง"],["生产","shēngchǎn","การผลิต"],
+["省","shěng","มณฑล/ประหยัด"],["剩","shèng","เหลือ"],["失败","shībài","ความล้มเหลว"],
+["失望","shīwàng","ผิดหวัง"],["时代","shídài","ยุคสมัย"],["实际","shíjì","ที่เป็นจริง"],
+["实在","shízài","จริงๆ"],["食品","shípǐn","ผลิตภัณฑ์อาหาร"],["市场","shìchǎng","ตลาด"],
+["是否","shìfǒu","หรือไม่"],["适应","shìyìng","ปรับตัว"],["收入","shōurù","รายได้"],
+["收拾","shōushi","จัดเก็บ"],["首都","shǒudū","เมืองหลวง"],["受不了","shòubuliǎo","ทนไม่ไหว"],
+["输入","shūrù","นำเข้า/ป้อนข้อมูล"],["熟练","shúliàn","ชำนาญ"],["数据","shùjù","ข้อมูล"],
+["双方","shuāngfāng","ทั้งสองฝ่าย"],["说不定","shuōbudìng","อาจจะ"],["私人","sīrén","ส่วนตัว"],
+["似乎","sìhū","ดูเหมือนว่า"],["随着","suízhe","ตามหลัง/ตามที่"],["所谓","suǒwèi","ที่เรียกว่า"],
+["台阶","táijiē","ขั้นบันได"],["弹","tán","ดีด"],["逃","táo","หนี"],["讨论","tǎolùn","อภิปราย"],
+["讨厌","tǎoyàn","รังเกียจ"],["特点","tèdiǎn","จุดเด่น"],["提","tí","ยกขึ้น/เอ่ยถึง"],
+["提供","tígōng","จัดหาให้"],["体会","tǐhuì","ประสบการณ์ที่ได้เรียนรู้"],["体现","tǐxiàn","สะท้อนให้เห็น"],
+["天空","tiānkōng","ท้องฟ้า"],["调整","tiáozhěng","ปรับปรุง"],["挑战","tiǎozhàn","ความท้าทาย"],
+["通过","tōngguò","ผ่าน (การอนุมัติ/วิธี)"],["通知","tōngzhī","แจ้งให้ทราบ"],["统一","tǒngyī","รวมเป็นหนึ่ง"],
+["痛苦","tòngkǔ","เจ็บปวด"],["投资","tóuzī","ลงทุน"],["突出","tūchū","โดดเด่น"],["土地","tǔdì","ที่ดิน"],
+["推","tuī","ผลัก"],["推迟","tuīchí","เลื่อนออกไป"],["退","tuì","ถอย/คืน"],["歪","wāi","เอียง"],
+["completing" ,"placeholder","placeholder"]
+];
+HSK4.pop();
+
+function toWord([hanzi, pinyin, thai], level){
+  return { id: level+"-"+hanzi+"-"+pinyin, hanzi, pinyin, thai, level };
+}
+const WORDS = {
+  1: HSK1.map(w=>toWord(w,1)),
+  2: HSK2.map(w=>toWord(w,2)),
+  3: HSK3.map(w=>toWord(w,3)),
+  4: HSK4.map(w=>toWord(w,4)),
+};
+WORDS.all = WORDS[1].concat(WORDS[2]).concat(WORDS[3]).concat(WORDS[4]);
+
+/* ---------- STORAGE ---------- */
+const STORE_KEY = "hskFlashcardReview_v1";
+function loadStore(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveStore(s){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(e){}
+}
+let reviewStore = loadStore(); // id -> {hanzi,pinyin,thai,level,status,wrongCount,lastSeen}
+
+function recordSeen(word, status){
+  const prev = reviewStore[word.id] || {wrongCount:0};
+  reviewStore[word.id] = {
+    hanzi: word.hanzi, pinyin: word.pinyin, thai: word.thai, level: word.level,
+    status: status,
+    wrongCount: prev.wrongCount + (status === "wrong" ? 1 : 0),
+    lastSeen: Date.now()
+  };
+  saveStore(reviewStore);
+}
+
+/* ---------- QUIZ STATE ---------- */
+let currentLevel = null;
+let pool = [];
+let queue = [];
+let currentWord = null;
+let currentChoices = [];
+let answered = false;
+let totalThisRound = 0;
+let doneThisRound = 0;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startLevel(levelKey){
+  currentLevel = levelKey;
+  pool = WORDS[levelKey];
+  queue = shuffle(pool);
+  totalThisRound = queue.length;
+  doneThisRound = 0;
+  document.getElementById("progressRow").style.display = "flex";
+  document.querySelectorAll(".level-chip").forEach(el=>{
+    el.classList.toggle("active", el.dataset.level === String(levelKey));
+  });
+  nextQuestion();
+}
+
+function updateProgress(){
+  const pct = totalThisRound ? Math.round((doneThisRound/ (doneThisRound + queue.length + (answered?0:0)) )*100) : 0;
+  // simpler: track completed vs remaining unique-ish
+  const remaining = queue.length + (currentWord ? 1 : 0);
+  const totalKnownSoFar = doneThisRound + remaining;
+  const donePct = totalKnownSoFar ? Math.round((doneThisRound/totalKnownSoFar)*100) : 0;
+  document.getElementById("progressFill").style.width = donePct + "%";
+  document.getElementById("progressText").textContent = doneThisRound + " ตอบแล้ว";
+  const retryCount = queue.filter(w=>w._retry).length;
+  const badge = document.getElementById("retryBadge");
+  if(retryCount > 0){
+    badge.style.display = "inline-block";
+    badge.textContent = "รอทบทวนอีก " + retryCount;
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function pickDistractors(correctWord, n){
+  const others = pool.filter(w => w.thai !== correctWord.thai);
+  const shuffled = shuffle(others).slice(0, n);
+  return shuffled;
+}
+
+function nextQuestion(){
+  answered = false;
+  if(queue.length === 0){
+    renderDone();
+    return;
+  }
+  currentWord = queue.shift();
+  const distractors = pickDistractors(currentWord, 2);
+  currentChoices = shuffle([currentWord, ...distractors]);
+  updateProgress();
+  renderQuiz();
+}
+
+function renderQuiz(){
+  const area = document.getElementById("quizArea");
+  area.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="hanzi cjk">${currentWord.hanzi}</div>
+    <div class="pinyin">${currentWord.pinyin}</div>
+    <div class="hint">เลือกความหมายที่ถูกต้อง</div>
+  `;
+  area.appendChild(card);
+
+  const feedback = document.createElement("div");
+  feedback.className = "feedback";
+  feedback.id = "feedback";
+  area.appendChild(feedback);
+
+  const choicesWrap = document.createElement("div");
+  choicesWrap.className = "choices";
+  currentChoices.forEach((w, idx)=>{
+    const btn = document.createElement("div");
+    btn.className = "choice";
+    btn.tabIndex = 0;
+    btn.dataset.idx = idx;
+    btn.innerHTML = `
+      <span class="th-line">${w.thai}</span>
+      <span class="zh-line cjk">${w.hanzi} · ${w.pinyin}</span>
+    `;
+    btn.addEventListener("click", ()=> selectChoice(idx));
+    btn.addEventListener("keydown", (e)=>{ if(e.key==="Enter"||e.key===" "){ selectChoice(idx); } });
+    choicesWrap.appendChild(btn);
+  });
+  area.appendChild(choicesWrap);
+}
+
+function selectChoice(idx){
+  if(answered) return;
+  answered = true;
+  const picked = currentChoices[idx];
+  const isCorrect = picked.thai === currentWord.thai;
+  const feedback = document.getElementById("feedback");
+
+  document.querySelectorAll(".choice").forEach((el, i)=>{
+    el.classList.add("locked","reveal");
+    const w = currentChoices[i];
+    if(w.thai === currentWord.thai){
+      el.classList.add("correct-answer");
+    }
+    if(i === idx && !isCorrect){
+      el.classList.add("wrong-pick");
+    }
+  });
+
+  if(isCorrect){
+    feedback.textContent = "ถูกต้อง! 对了";
+    feedback.className = "feedback correct";
+    recordSeen(currentWord, "correct");
+    doneThisRound++;
+  } else {
+    feedback.textContent = "ยังไม่ใช่ — คำที่เลือกคือ " + picked.hanzi + " (" + picked.pinyin + ")";
+    feedback.className = "feedback wrong";
+    recordSeen(currentWord, "wrong");
+    doneThisRound++;
+    // requeue for retry later this round
+    const retryWord = Object.assign({}, currentWord, {_retry:true});
+    const insertAt = Math.min(queue.length, 3 + Math.floor(Math.random()*3));
+    queue.splice(insertAt, 0, retryWord);
+  }
+
+  updateProgress();
+
+  const area = document.getElementById("quizArea");
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "next-btn";
+  nextBtn.textContent = "ข้อต่อไป →";
+  nextBtn.addEventListener("click", nextQuestion);
+  area.appendChild(nextBtn);
+}
+
+function renderDone(){
+  document.getElementById("progressRow").style.display = "none";
+  const area = document.getElementById("quizArea");
+  area.innerHTML = `
+    <div class="done-screen">
+      <div class="zh cjk">完成! เคลียร์รอบนี้แล้ว</div>
+      <p>ตอบไปทั้งหมด ${doneThisRound} ข้อ — คำที่เคยตอบผิดจะถูกเก็บไว้ใน "ทบทวนคำศัพท์" กดดูได้ตลอดเวลา</p>
+      <button id="restartBtn">เล่นรอบใหม่</button>
+    </div>
+  `;
+  document.getElementById("restartBtn").addEventListener("click", ()=> startLevel(currentLevel));
+}
+
+/* ---------- LEVEL PICKER ---------- */
+document.querySelectorAll(".level-chip").forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    const lvl = chip.dataset.level === "all" ? "all" : Number(chip.dataset.level);
+    startLevel(lvl);
+  });
+});
+
+/* ---------- REVIEW MODAL ---------- */
+const overlay = document.getElementById("overlay");
+document.getElementById("reviewBtn").addEventListener("click", ()=>{
+  renderModal();
+  overlay.classList.add("show");
+});
+document.getElementById("closeModal").addEventListener("click", ()=> overlay.classList.remove("show"));
+overlay.addEventListener("click", (e)=>{ if(e.target === overlay) overlay.classList.remove("show"); });
+
+function renderModal(){
+  const list = document.getElementById("modalList");
+  const entries = Object.values(reviewStore).sort((a,b)=> b.lastSeen - a.lastSeen);
+  if(entries.length === 0){
+    list.innerHTML = `<div class="empty-note">ยังไม่มีคำที่ทบทวน — เริ่มเลือกระดับด้านบนแล้วเล่นได้เลย</div>`;
+    return;
+  }
+  list.innerHTML = entries.map(w=>{
+    const pillClass = w.status === "wrong" ? "status-retry" : "status-ok";
+    const pillText = w.status === "wrong" ? "รอทบทวนอีกครั้ง" : "ผ่านแล้ว";
+    return `
+      <div class="vocab-row">
+        <div class="vocab-main">
+          <span class="zh cjk">${w.hanzi}</span>
+          <span class="py">${w.pinyin}</span>
+          <span class="th">${w.thai}</span>
+        </div>
+        <span class="status-pill ${pillClass}">${pillText}</span>
+      </div>
+    `;
+  }).join("");
+}
+</script>
+</body>
+</html>
